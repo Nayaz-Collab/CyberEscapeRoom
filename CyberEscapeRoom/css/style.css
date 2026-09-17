@@ -1,0 +1,224 @@
+/* ============================================
+   STYLE.CSS — layout, HUD, inventory, badges
+   ============================================ */
+
+*{ box-sizing: border-box; }
+html,body{
+  margin:0; padding:0;
+  background: var(--term-bg);
+  min-height: 100vh;
+}
+body{
+  font-family: var(--mono);
+  color: var(--green);
+}
+a{ color: var(--cyan-accent); }
+
+.wrap{
+  position: relative;
+  z-index: 10;
+  padding: 24px 16px 60px;
+}
+
+/* --- HUD bar (score / timer / inventory) --- */
+#hud{
+  position: relative;
+  z-index: 20;
+  max-width: 900px;
+  margin: 0 auto 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border: 1px solid var(--green-dim);
+  border-radius: 8px;
+  background: rgba(6,22,8,0.85);
+  backdrop-filter: blur(2px);
+  font-size: 13px;
+}
+#hud .hud-group{ display:flex; gap:16px; flex-wrap: wrap; align-items:center; }
+#hud .hud-item{ display:flex; gap:6px; align-items:center; white-space:nowrap; }
+#hud .hud-label{ color: var(--green-dim); text-transform: uppercase; font-size:11px; letter-spacing:1px; }
+#hud .hud-value{ color: var(--green-bright); font-weight:bold; }
+#hud .hud-value.timer-low{ color: var(--red-alert); animation: blink 1s steps(1) infinite; }
+
+/* room progress dots */
+.progress-dots{ display:flex; gap:6px; }
+.progress-dots .dot{
+  width:10px; height:10px; border-radius:50%;
+  border:1px solid var(--green-dim);
+  background: transparent;
+}
+.progress-dots .dot.done{ background: var(--green); box-shadow:0 0 6px var(--green); }
+.progress-dots .dot.current{ border-color: var(--amber); box-shadow:0 0 6px var(--amber); }
+
+/* inventory strip */
+.inventory-strip{ display:flex; gap:6px; }
+.inv-chip{
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid var(--green-dim);
+  border-radius: 4px;
+  color: var(--green-bright);
+  background: rgba(51,255,102,0.06);
+}
+.inv-chip.empty{ opacity:.3; border-style:dashed; }
+
+/* --- Page title --- */
+h1.page-title{
+  font-size: clamp(20px, 4vw, 30px);
+  color: var(--green-bright);
+  text-shadow: 0 0 12px rgba(51,255,102,0.5);
+  letter-spacing: 1px;
+  margin: 0 0 4px;
+}
+.page-subtitle{
+  color: var(--green-dim);
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+
+/* --- Hint system --- */
+.hint-box{
+  margin-top: 14px;
+  padding: 10px 14px;
+  border: 1px dashed var(--amber);
+  border-radius: 6px;
+  color: var(--amber);
+  font-size: 13px;
+  display:none;
+}
+.hint-box.show{ display:block; }
+.hint-actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:16px; }
+.hint-counter{ font-size:12px; color: var(--green-dim); }
+
+/* --- Room content grids --- */
+.room-grid{ display:grid; gap: 18px; }
+@media(min-width:700px){
+  .room-grid.two-col{ grid-template-columns: 1.1fr 0.9fr; }
+}
+
+.mono-block{
+  background:#000;
+  border:1px solid var(--green-dim);
+  border-radius:6px;
+  padding: 14px 16px;
+  font-size: 13.5px;
+  overflow-x:auto;
+  white-space:pre;
+}
+
+/* checkbox / option list */
+.option-list{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+.option-item{
+  display:flex; gap:10px; align-items:flex-start;
+  border:1px solid var(--green-dim);
+  border-radius:6px;
+  padding:10px 12px;
+  cursor:pointer;
+  transition: border-color .15s, background .15s;
+  font-size: 13.5px;
+}
+.option-item:hover{ border-color: var(--green); background: rgba(51,255,102,0.05); }
+.option-item.selected{ border-color: var(--cyan-accent); background: rgba(72,245,214,0.08); }
+.option-item input{ margin-top:3px; accent-color: var(--green); }
+
+/* strength meter */
+.strength-meter{
+  height: 10px;
+  border-radius: 5px;
+  background: #111;
+  border: 1px solid var(--green-dim);
+  overflow:hidden;
+  margin-top: 10px;
+}
+.strength-meter > div{
+  height: 100%;
+  width: 0%;
+  transition: width .3s, background .3s;
+}
+
+/* --- Badges / achievements --- */
+.badge-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top: 14px; }
+.badge{
+  display:flex; align-items:center; gap:8px;
+  border: 1px solid var(--cyan-accent);
+  color: var(--cyan-accent);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  background: rgba(72,245,214,0.08);
+  animation: badgePop .4s ease;
+}
+@keyframes badgePop{
+  0%{ transform: scale(.4); opacity:0; }
+  70%{ transform: scale(1.08); opacity:1;}
+  100%{ transform: scale(1); }
+}
+
+/* --- Fade / slide transitions between rooms --- */
+.fade-in{ animation: fadeIn .6s ease both; }
+@keyframes fadeIn{ from{ opacity:0; transform: translateY(8px);} to{ opacity:1; transform:translateY(0);} }
+
+/* --- Nav footer --- */
+.nav-footer{
+  max-width: 900px;
+  margin: 20px auto 0;
+  display:flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* --- Landing / story hero --- */
+.hero{
+  max-width: 760px;
+  margin: 6vh auto;
+  text-align:center;
+  padding: 0 16px;
+}
+.hero .flag-ascii{
+  font-size: 11px;
+  line-height: 1.15;
+  color: var(--green-dim);
+  margin-bottom: 20px;
+  white-space: pre;
+}
+.hero-buttons{ display:flex; gap:14px; justify-content:center; margin-top:26px; flex-wrap:wrap; }
+
+/* --- Responsive tweaks --- */
+@media(max-width:600px){
+  #hud{ flex-direction: column; align-items: stretch; gap: 8px; }
+  #hud .hud-group{ justify-content: space-between; }
+  .terminal-body{ padding: 18px 14px; }
+}
+
+/* --- Ending screen variants --- */
+.ending-banner{
+  text-align:center;
+  padding: 26px 14px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+}
+.ending-banner.win{ border:1px solid var(--green); box-shadow:0 0 24px rgba(51,255,102,.3); }
+.ending-banner.mid{ border:1px solid var(--amber); box-shadow:0 0 24px rgba(255,176,0,.25); }
+.ending-banner.fail{ border:1px solid var(--red-alert); box-shadow:0 0 24px rgba(255,59,59,.3); }
+
+.flag-reveal{
+  font-size: clamp(16px,3.5vw,22px);
+  letter-spacing: 1px;
+  color: var(--green-bright);
+  background:#000;
+  border:1px solid var(--green-dim);
+  padding: 14px;
+  border-radius:6px;
+  word-break: break-all;
+  margin: 14px 0;
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}

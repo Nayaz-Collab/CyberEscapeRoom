@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Final Vault // Cyber Escape Room</title>
+<link rel="stylesheet" href="css/terminal.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="crt crt-flicker">
+<canvas id="matrixRain"></canvas>
+<div id="breachOverlay"></div>
+
+<div class="wrap">
+  <div id="hud"></div>
+
+  <div class="terminal-window fade-in">
+    <div class="terminal-titlebar">
+      <span class="tb-dot"></span><span class="tb-dot"></span><span class="tb-dot"></span>
+      <span class="tb-label">final_vault :: decrypt.sh</span>
+    </div>
+    <div class="terminal-body" id="body">
+      <!-- populated by script -->
+    </div>
+  </div>
+
+  <div class="nav-footer">
+    <button class="btn-term danger" id="playAgainBtn">↻ Play Again From Scratch</button>
+    <span></span>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/game.js"></script>
+<script src="js/timer.js"></script>
+<script>
+  Game.startMatrixRain();
+  Game.renderHUD('hud', null);
+  CountdownTimer.stop();
+
+  const params = new URLSearchParams(window.location.search);
+  const forcedTimeout = params.get('ending') === 'timeout';
+  const state = Game.getState();
+  const body = document.getElementById('body');
+
+  const completedCount = Game.ROOM_ORDER.filter(k => state.roomsCompleted[k]).length;
+  const allDone = completedCount === Game.ROOM_ORDER.length;
+
+  if(!allDone && !forcedTimeout && !state.timedOut){
+    // came here without finishing — send back to the right room
+    const nextKey = Game.ROOM_ORDER.find(k => !state.roomsCompleted[k]);
+    window.location.href = nextKey ? Game.ROOM_META[nextKey].file : 'story.html';
+  } else {
+    render();
+  }
+
+  function render(){
+    const timedOutFail = (forcedTimeout || state.timedOut) && !allDone;
+
+    if(timedOutFail){
+      renderTimeoutEnding();
+    } else {
+      renderNormalEnding();
+    }
+    Game.Sound.alert();
+  }
+
+  function fragmentString(){
+    return Game.ROOM_ORDER.map(k => state.inventory[k] || '').join('');
+  }
+
+  function renderTimeoutEnding(){
+    body.innerHTML = `
+      <div class="ending-banner fail">
+        <h1 class="page-title glitch-text shake">SERVER WIPED</h1>
+        <p class="page-subtitle">The countdown reached zero before all six locks were broken.</p>
+      </div>
+      <p>Fragments recovered before the wipe: <strong>${completedCount} / 6</strong></p>
+      <p>Final score: <strong>${state.score}</strong></p>
+      <div class="hint-actions">
+        <a href="index.html" class="btn-term amber" style="text-decoration:none;">Return to Terminal</a>
+      </div>
+    `;
+  }
+
+  function renderNormalEnding(){
+    const pct = state.maxScore > 0 ? Math.round((state.score / state.maxScore) * 100) : 0;
+
+    // Escape Artist achievement — always earned on full completion
+    Game.awardAchievement('ESCAPE_ARTIST', '🏁 Escape Artist');
+
+    // Speed Runner — finished with more than half the clock remaining
+    const remaining = CountdownTimer.secondsLeft();
+    if(remaining > TOTAL_TIME_SECONDS / 2){
+      Game.awardAchievement('SPEED_RUNNER', '⚡ Speed Runner');
+    }
+
+    let tier, bannerClass, title, narrative;
+    if(pct >= 90){
+      tier='elite'; bannerClass='win'; title='FLAWLESS ESCAPE';
+      narrative = 'You dismantled every trap the intruder set with barely a misstep. The SOC team is already drafting your commendation — Elite Security Analyst status confirmed.';
+    } else if(pct >= 70){
+      tier='skilled'; bannerClass='win'; title='SUCCESSFUL ESCAPE';
+      narrative = 'A clean, professional response under pressure. The breach is contained and the intruder\'s access has been fully revoked.';
+    } else if(pct >= 50){
+      tier='rookie'; bannerClass='mid'; title='NARROW ESCAPE';
+      narrative = 'You made it out, but only just. A few too many hints and missteps along the way — worth a review before the next incident.';
+    } else {
+      tier='compromised'; bannerClass='fail'; title='COMPROMISED ESCAPE';
+      narrative = 'You escaped the server, but the intruder slipped out through the same door. Expect a very uncomfortable debrief with leadership.';
+    }
+
+    const badgeHtml = state.achievements.map(id=>{
+      const labels = {
+        CIPHER_BREAKER:'🔓 Cipher Breaker', PHISH_SNIPER:'🎣 Phishing Sniper', PASSWORD_PRO:'🔑 Password Pro',
+        SQL_GUARDIAN:'🛡 SQL Guardian', LOG_DETECTIVE:'🕵 Log Detective', URL_HUNTER:'🌐 URL Hunter',
+        ESCAPE_ARTIST:'🏁 Escape Artist', SPEED_RUNNER:'⚡ Speed Runner'
+      };
+      return `<span class="badge">${labels[id] || id}</span>`;
+    }).join('');
+
+    body.innerHTML = `
+      <div class="ending-banner ${bannerClass}">
+        <h1 class="page-title">${title}</h1>
+        <p class="page-subtitle">Final Score: ${state.score} / ${state.maxScore}  (${pct}%)</p>
+      </div>
+      <p>${narrative}</p>
+
+      <p style="margin-top:18px;">All six key fragments combine into the master flag:</p>
+      <div class="flag-reveal" id="flagReveal"></div>
+
+      <p style="margin-top:18px;">Achievements earned:</p>
+      <div class="badge-row">${badgeHtml || '<span class="page-subtitle">None yet — replay to earn some!</span>'}</div>
+
+      <div class="hint-actions">
+        <a href="index.html" class="btn-term amber" style="text-decoration:none;">Return to Terminal</a>
+      </div>
+    `;
+    Game.typeWriter(document.getElementById('flagReveal'), fragmentString(), 30);
+  }
+
+  document.getElementById('playAgainBtn').addEventListener('click', ()=>{
+    if(confirm('This will erase your save and start a brand new run. Continue?')){
+      Game.hardReset();
+      window.location.href = 'index.html';
+    }
+  });
+</script>
+</body>
+</html>

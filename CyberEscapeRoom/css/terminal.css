@@ -1,0 +1,211 @@
+/* ============================================
+   TERMINAL.CSS — CRT / hacker-terminal chrome
+   ============================================ */
+
+:root{
+  --term-bg: #020403;
+  --term-bg-panel: #061608;
+  --green: #33ff66;
+  --green-dim: #1c9e3d;
+  --green-bright: #baffcb;
+  --amber: #ffb000;
+  --red-alert: #ff3b3b;
+  --cyan-accent: #48f5d6;
+  --mono: 'Courier New', 'Fira Code', ui-monospace, monospace;
+}
+
+/* --- CRT screen wrapper: scanlines + vignette + flicker --- */
+.crt{
+  position: relative;
+  min-height: 100vh;
+  background: var(--term-bg);
+  overflow-x: hidden;
+}
+.crt::before{
+  content:"";
+  pointer-events:none;
+  position:fixed; inset:0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 2px,
+    rgba(0,0,0,0.18) 3px
+  );
+  z-index: 60;
+  mix-blend-mode: multiply;
+}
+.crt::after{
+  content:"";
+  pointer-events:none;
+  position:fixed; inset:0;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%);
+  z-index: 61;
+}
+@keyframes crtFlicker{
+  0%,100%{opacity:1;}
+  92%{opacity:1;}
+  93%{opacity:.86;}
+  94%{opacity:1;}
+  97%{opacity:.92;}
+}
+.crt-flicker{ animation: crtFlicker 6s infinite; }
+
+/* --- Matrix rain canvas (signature background) --- */
+#matrixRain{
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.35;
+}
+
+/* --- Breach / glitch overlay --- */
+#breachOverlay{
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display:none;
+  background: rgba(255,0,0,0.08);
+  pointer-events:none;
+}
+#breachOverlay.active{
+  display:block;
+  animation: breachPulse .5s steps(2) 3;
+}
+@keyframes breachPulse{
+  0%{ background: rgba(255,0,0,0.25); transform: translate(0,0); }
+  50%{ background: rgba(255,0,0,0.05); transform: translate(-2px,1px); }
+  100%{ background: rgba(255,0,0,0.25); transform: translate(2px,-1px); }
+}
+.glitch-text{
+  position: relative;
+  display: inline-block;
+}
+.glitch-text.shake, .shake{
+  animation: glitchShake .35s linear;
+}
+@keyframes glitchShake{
+  0%{ transform: translate(0); text-shadow: 2px 0 var(--red-alert), -2px 0 var(--cyan-accent); }
+  20%{ transform: translate(-2px,1px); }
+  40%{ transform: translate(2px,-1px); }
+  60%{ transform: translate(-1px,-1px); }
+  80%{ transform: translate(1px,1px); }
+  100%{ transform: translate(0); text-shadow: none; }
+}
+
+/* --- Terminal window chrome --- */
+.terminal-window{
+  position: relative;
+  z-index: 10;
+  max-width: 900px;
+  margin: 0 auto;
+  background: var(--term-bg-panel);
+  border: 1px solid var(--green-dim);
+  border-radius: 8px;
+  box-shadow: 0 0 25px rgba(51,255,102,0.15), inset 0 0 40px rgba(0,0,0,0.6);
+}
+.terminal-titlebar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--green-dim);
+  background: linear-gradient(180deg, rgba(51,255,102,0.08), transparent);
+}
+.tb-dot{ width:10px; height:10px; border-radius:50%; background: var(--green-dim); }
+.terminal-titlebar span.tb-label{
+  margin-left: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--green-dim);
+  letter-spacing: 1px;
+}
+.terminal-body{
+  padding: 24px clamp(14px, 4vw, 40px);
+  font-family: var(--mono);
+  color: var(--green);
+}
+
+/* --- Blinking cursor --- */
+.cursor{
+  display:inline-block;
+  width: 0.6em;
+  background: var(--green);
+  animation: blink 1s steps(1) infinite;
+  margin-left: 2px;
+}
+@keyframes blink{ 50%{ opacity:0; } }
+
+/* --- Prompt line styling --- */
+.prompt-line{
+  display:flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.prompt-line .ps1{ color: var(--cyan-accent); white-space:nowrap; }
+.prompt-line .ps1::after{ content:"$"; margin-left: 2px; color: var(--green-dim); }
+
+/* --- Typewriter text --- */
+.type-out{
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+/* --- Buttons, terminal style --- */
+.btn-term{
+  font-family: var(--mono);
+  background: transparent;
+  border: 1px solid var(--green);
+  color: var(--green);
+  padding: 10px 22px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-size: 13px;
+  border-radius: 4px;
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+.btn-term:hover{
+  background: var(--green);
+  color: #001a05;
+  box-shadow: 0 0 18px rgba(51,255,102,0.6);
+}
+.btn-term:disabled{
+  opacity: .35;
+  cursor: not-allowed;
+}
+.btn-term.danger{ border-color: var(--red-alert); color: var(--red-alert); }
+.btn-term.danger:hover{ background: var(--red-alert); color:#1a0000; box-shadow:0 0 18px rgba(255,59,59,.6);}
+.btn-term.amber{ border-color: var(--amber); color: var(--amber); }
+.btn-term.amber:hover{ background: var(--amber); color:#1a1200; box-shadow:0 0 18px rgba(255,176,0,.6);}
+
+/* --- Inputs --- */
+.input-term{
+  font-family: var(--mono);
+  background: #000;
+  border: 1px solid var(--green-dim);
+  color: var(--green-bright);
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 4px;
+  width: 100%;
+}
+.input-term:focus{
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 10px rgba(51,255,102,0.35);
+}
+
+/* --- Feedback banners --- */
+.feedback{
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--green);
+  background: rgba(51,255,102,0.06);
+  font-size: 14px;
+  display:none;
+}
+.feedback.show{ display:block; }
+.feedback.err{ border-color: var(--red-alert); background: rgba(255,59,59,0.08); color: var(--red-alert); }
+.feedback.ok{ border-color: var(--green); background: rgba(51,255,102,0.1); color: var(--green-bright); }
+.feedback.warn{ border-color: var(--amber); background: rgba(255,176,0,0.08); color: var(--amber); }

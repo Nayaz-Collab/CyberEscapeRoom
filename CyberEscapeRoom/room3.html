@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room 3: Password Vault // Cyber Escape Room</title>
+<link rel="stylesheet" href="css/terminal.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="crt crt-flicker">
+<canvas id="matrixRain"></canvas>
+<div id="breachOverlay"></div>
+
+<div class="wrap">
+  <div id="hud"></div>
+
+  <div class="terminal-window fade-in">
+    <div class="terminal-titlebar">
+      <span class="tb-dot"></span><span class="tb-dot"></span><span class="tb-dot"></span>
+      <span class="tb-label">room3 :: password_vault.db</span>
+    </div>
+    <div class="terminal-body">
+      <h1 class="page-title">ROOM 3 — PASSWORD VAULT</h1>
+      <p class="page-subtitle">A stolen credential sits in the vault. Judge it, then replace it.</p>
+
+      <div class="prompt-line"><span class="ps1">select</span> password FROM vault WHERE user='admin';</div>
+      <div class="mono-block">Password: Admin123</div>
+
+      <p style="margin-top:18px;">1. How would you rate this password's strength?</p>
+      <div class="option-list" id="ratingOptions"></div>
+
+      <p style="margin-top:18px;">2. Replace it with a stronger password:</p>
+      <input type="text" id="newPassword" class="input-term" placeholder="Type a new, stronger password...">
+      <div class="strength-meter"><div id="strengthFill"></div></div>
+      <p class="page-subtitle" id="strengthLabel">Strength: —</p>
+
+      <div class="hint-actions">
+        <button class="btn-term" id="hintBtn">💡 Get Hint (−25 pts)</button>
+        <span class="hint-counter" id="hintCounter"></span>
+      </div>
+      <div class="hint-box" id="hintBox"></div>
+
+      <div class="hint-actions">
+        <button class="btn-term amber" id="submitBtn">Submit</button>
+      </div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+  </div>
+
+  <div class="nav-footer">
+    <a href="room2.html" class="btn-term" style="text-decoration:none;">&laquo; Room 2</a>
+    <span></span>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/game.js"></script>
+<script src="js/timer.js"></script>
+<script src="js/puzzles.js"></script>
+<script>
+  const ROOM_KEY = 'room3';
+  Game.startMatrixRain();
+  if(!Game.isRoomUnlocked(ROOM_KEY)){ window.location.href = 'room2.html'; }
+  Game.renderHUD('hud', ROOM_KEY);
+  CountdownTimer.start({ onExpire: ()=>{ window.location.href = 'escape.html?ending=timeout'; } });
+
+  const ratings = [
+    ['very-weak','Very Weak'], ['weak','Weak'], ['fair','Fair'], ['strong','Strong'], ['very-strong','Very Strong']
+  ];
+  const ratingMount = document.getElementById('ratingOptions');
+  ratings.forEach(([val,label])=>{
+    const div = document.createElement('label');
+    div.className = 'option-item';
+    div.innerHTML = `<input type="radio" name="rating" value="${val}"> <span>${label}</span>`;
+    div.addEventListener('click', ()=>{
+      document.querySelectorAll('#ratingOptions .option-item').forEach(o=>o.classList.remove('selected'));
+      div.classList.add('selected');
+    });
+    ratingMount.appendChild(div);
+  });
+
+  const pwInput = document.getElementById('newPassword');
+  const fill = document.getElementById('strengthFill');
+  const label = document.getElementById('strengthLabel');
+  pwInput.addEventListener('input', ()=>{
+    const r = Puzzles.room3.scorePassword(pwInput.value);
+    fill.style.width = (r.score/5*100) + '%';
+    fill.style.background = r.color;
+    label.textContent = 'Strength: ' + r.label;
+  });
+
+  const hintBtn = document.getElementById('hintBtn');
+  const hintBox = document.getElementById('hintBox');
+  function refreshHintCounter(){
+    const used = Game.getState().hintsUsed[ROOM_KEY] || 0;
+    document.getElementById('hintCounter').textContent = `Hints used: ${used}/${Puzzles.room3.hints.length}`;
+    if(used >= Puzzles.room3.hints.length) hintBtn.disabled = true;
+  }
+  refreshHintCounter();
+  hintBtn.addEventListener('click', ()=>{
+    const used = Game.registerHint(ROOM_KEY);
+    Game.Sound.key();
+    hintBox.textContent = '💡 ' + (Puzzles.room3.hints[used-1] || Puzzles.room3.hints[Puzzles.room3.hints.length-1]);
+    hintBox.classList.add('show');
+    refreshHintCounter();
+  });
+
+  document.getElementById('submitBtn').addEventListener('click', ()=>{
+    const feedback = document.getElementById('feedback');
+    const ratingChoice = document.querySelector('input[name="rating"]:checked');
+    const ratingCorrect = ratingChoice && (ratingChoice.value === 'very-weak' || ratingChoice.value === 'weak');
+    const r = Puzzles.room3.scorePassword(pwInput.value);
+    const pwStrongEnough = r.score >= 4 && pwInput.value.toLowerCase() !== Puzzles.room3.shownPassword.toLowerCase();
+
+    if(ratingCorrect && pwStrongEnough){
+      Game.Sound.success();
+      const pts = Game.completeRoom(ROOM_KEY);
+      Game.updateHudScore();
+      feedback.className = 'feedback show ok';
+      feedback.textContent = `✔ VAULT SECURED — Key fragment acquired: "${Game.getState().inventory[ROOM_KEY]}"  (+${pts} pts)`;
+      document.getElementById('submitBtn').outerHTML = `<a href="${Game.nextRoomFile(ROOM_KEY)}" class="btn-term amber" style="text-decoration:none;display:inline-block;">Proceed to Room 4 ▶</a>`;
+    } else {
+      Game.registerWrongAttempt(ROOM_KEY);
+      Game.Sound.error();
+      Game.triggerBreachFlash();
+      Game.shakeGlitch(document.querySelector('.page-title'));
+      feedback.className = 'feedback show err';
+      feedback.textContent = '✘ REJECTED — ' + (!ratingCorrect ? 'Re-examine the rating — Admin123 is a well-known default credential. ' : '') + (!pwStrongEnough ? 'Your new password needs to reach VERY STRONG.' : '');
+    }
+  });
+
+  const st = Game.getState();
+  if(st.roomsCompleted[ROOM_KEY]){
+    const feedback = document.getElementById('feedback');
+    feedback.className = 'feedback show ok';
+    feedback.textContent = `✔ Already solved — fragment "${st.inventory[ROOM_KEY]}" collected.`;
+    document.getElementById('submitBtn').outerHTML = `<a href="${Game.nextRoomFile(ROOM_KEY)}" class="btn-term amber" style="text-decoration:none;display:inline-block;">Proceed to Room 4 ▶</a>`;
+  }
+</script>
+</body>
+</html>

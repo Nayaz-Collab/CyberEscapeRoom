@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room 1: Cipher Challenge // Cyber Escape Room</title>
+<link rel="stylesheet" href="css/terminal.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="crt crt-flicker">
+<canvas id="matrixRain"></canvas>
+<div id="breachOverlay"></div>
+
+<div class="wrap">
+  <div id="hud"></div>
+
+  <div class="terminal-window fade-in">
+    <div class="terminal-titlebar">
+      <span class="tb-dot"></span><span class="tb-dot"></span><span class="tb-dot"></span>
+      <span class="tb-label">room1 :: cipher_challenge.exe</span>
+    </div>
+    <div class="terminal-body">
+      <h1 class="page-title">ROOM 1 — CIPHER CHALLENGE</h1>
+      <p class="page-subtitle">The intruder left an encoded message in the audit log.</p>
+
+      <div class="room-grid">
+        <div>
+          <div class="prompt-line"><span class="ps1">cat</span> audit.log</div>
+          <div class="mono-block" id="cipherBlock"></div>
+
+          <p style="margin-top:16px;">1. What kind of cipher is this?</p>
+          <div class="option-list" id="cipherTypeOptions"></div>
+
+          <p style="margin-top:16px;">2. Decode the message:</p>
+          <input type="text" id="decodedInput" class="input-term" placeholder="Type the decoded message here...">
+
+          <div class="hint-actions">
+            <button class="btn-term" id="hintBtn">💡 Get Hint (−25 pts)</button>
+            <span class="hint-counter" id="hintCounter"></span>
+          </div>
+          <div class="hint-box" id="hintBox"></div>
+
+          <div class="hint-actions">
+            <button class="btn-term amber" id="submitBtn">Submit Answer</button>
+          </div>
+          <div class="feedback" id="feedback"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-footer">
+    <a href="story.html" class="btn-term" style="text-decoration:none;">&laquo; Briefing</a>
+    <span></span>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/game.js"></script>
+<script src="js/timer.js"></script>
+<script src="js/puzzles.js"></script>
+<script>
+  const ROOM_KEY = 'room1';
+  Game.startMatrixRain();
+
+  if(!Game.isRoomUnlocked(ROOM_KEY)){
+    window.location.href = 'story.html';
+  }
+
+  Game.renderHUD('hud', ROOM_KEY);
+
+  CountdownTimer.start({
+    onExpire: ()=>{ window.location.href = 'escape.html?ending=timeout'; }
+  });
+
+  document.getElementById('cipherBlock').textContent = Puzzles.room1.cipherText;
+
+  const typeOptions = [
+    { id:'caesar', label:'Caesar Cipher (fixed alphabet shift)' },
+    { id:'base64', label:'Base64 Encoding' },
+    { id:'vigenere', label:'Vigenère Cipher (repeating keyword shift)' },
+    { id:'rot13', label:'ROT13' }
+  ];
+  const optionsMount = document.getElementById('cipherTypeOptions');
+  typeOptions.forEach(opt=>{
+    const div = document.createElement('label');
+    div.className = 'option-item';
+    div.innerHTML = `<input type="radio" name="cipherType" value="${opt.id}"> <span>${opt.label}</span>`;
+    div.addEventListener('click', ()=>{
+      document.querySelectorAll('#cipherTypeOptions .option-item').forEach(o=>o.classList.remove('selected'));
+      div.classList.add('selected');
+    });
+    optionsMount.appendChild(div);
+  });
+
+  const state = Game.getState();
+  if(state.roomsCompleted[ROOM_KEY]){
+    showAlreadyDone();
+  }
+
+  const hintBtn = document.getElementById('hintBtn');
+  const hintBox = document.getElementById('hintBox');
+  function refreshHintCounter(){
+    const used = Game.getState().hintsUsed[ROOM_KEY] || 0;
+    document.getElementById('hintCounter').textContent = `Hints used: ${used}/${Puzzles.room1.hints.length}`;
+    if(used >= Puzzles.room1.hints.length) hintBtn.disabled = true;
+  }
+  refreshHintCounter();
+
+  hintBtn.addEventListener('click', ()=>{
+    const used = Game.registerHint(ROOM_KEY);
+    Game.Sound.key();
+    const hintText = Puzzles.room1.hints[used-1] || Puzzles.room1.hints[Puzzles.room1.hints.length-1];
+    hintBox.textContent = '💡 ' + hintText;
+    hintBox.classList.add('show');
+    refreshHintCounter();
+  });
+
+  document.getElementById('submitBtn').addEventListener('click', ()=>{
+    const typeChoice = document.querySelector('input[name="cipherType"]:checked');
+    const decoded = document.getElementById('decodedInput').value.trim().toUpperCase();
+    const feedback = document.getElementById('feedback');
+
+    const typeCorrect = typeChoice && typeChoice.value === Puzzles.room1.cipherTypeAnswer;
+    const textCorrect = decoded === Puzzles.room1.answer;
+
+    if(typeCorrect && textCorrect){
+      Game.Sound.success();
+      const pts = Game.completeRoom(ROOM_KEY);
+      Game.updateHudScore();
+      feedback.className = 'feedback show ok';
+      feedback.textContent = `✔ ACCESS GRANTED — Key fragment acquired: "${Game.getState().inventory[ROOM_KEY]}"  (+${pts} pts)`;
+      document.getElementById('submitBtn').outerHTML = `<a href="${Game.nextRoomFile(ROOM_KEY)}" class="btn-term amber" style="text-decoration:none;display:inline-block;">Proceed to Room 2 ▶</a>`;
+    } else {
+      Game.registerWrongAttempt(ROOM_KEY);
+      Game.Sound.error();
+      Game.triggerBreachFlash();
+      Game.shakeGlitch(document.querySelector('.page-title'));
+      feedback.className = 'feedback show err';
+      feedback.textContent = '✘ ACCESS DENIED — ' + (!typeCorrect ? 'Cipher type is incorrect. ' : '') + (!textCorrect ? 'Decoded text is incorrect.' : '');
+    }
+  });
+
+  function showAlreadyDone(){
+    const feedback = document.getElementById('feedback');
+    feedback.className = 'feedback show ok';
+    feedback.textContent = `✔ Already solved — fragment "${state.inventory[ROOM_KEY]}" collected.`;
+    document.getElementById('submitBtn').outerHTML = `<a href="${Game.nextRoomFile(ROOM_KEY)}" class="btn-term amber" style="text-decoration:none;display:inline-block;">Proceed to Room 2 ▶</a>`;
+  }
+</script>
+</body>
+</html>

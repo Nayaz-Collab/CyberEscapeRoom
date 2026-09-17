@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incident Briefing // Cyber Escape Room</title>
+<link rel="stylesheet" href="css/terminal.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="crt crt-flicker">
+<canvas id="matrixRain"></canvas>
+<div id="breachOverlay"></div>
+
+<div class="wrap">
+  <div id="hud"></div>
+
+  <div class="terminal-window fade-in">
+    <div class="terminal-titlebar">
+      <span class="tb-dot"></span><span class="tb-dot"></span><span class="tb-dot"></span>
+      <span class="tb-label">incident-response.log</span>
+    </div>
+    <div class="terminal-body">
+      <h1 class="page-title">INCIDENT BRIEFING</h1>
+      <p class="page-subtitle">CASE #2026-0711 — CLASSIFIED</p>
+
+      <div class="prompt-line"><span class="ps1">system</span></div>
+      <div id="storyText" class="type-out" style="min-height:220px;"></div>
+
+      <div class="hint-actions">
+        <button class="btn-term" id="skipBtn">Skip &raquo;</button>
+        <button class="btn-term amber" id="beginBtn" style="display:none;">▶ Begin Mission — Start Timer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/game.js"></script>
+<script src="js/timer.js"></script>
+<script>
+  Game.startMatrixRain();
+  Game.renderHUD('hud', null);
+
+  const fullStory =
+`03:41 AM. An alert fires across your SOC dashboard: unauthorized
+access detected on the core authentication server.
+
+Before you can react, your own terminal locks. A single message
+blinks onto the screen:
+
+  "You're inside my system now, analyst. Six locks stand between
+   you and the exit. Break them all... if you can.
+   The server wipes itself in 15:00 minutes.
+                                              — the intruder"
+
+Your badge, your access, your reputation — all of it depends on
+getting out before the clock hits zero. Six challenges. One shot.
+
+Room 1: a scrambled message left behind in the logs.
+Room 2: an email sitting in the compromised inbox.
+Room 3: a login credential that never should have worked.
+Room 4: a chunk of application code with a fatal flaw.
+Room 5: a wall of raw server logs hiding an intrusion.
+Room 6: a handful of links, only some of which are safe.
+
+Solve each one to collect a fragment of the master key. Combine
+all six fragments in the final vault to escape.
+
+Good luck, analyst. The clock starts the moment you begin.`;
+
+  const storyEl = document.getElementById('storyText');
+  const beginBtn = document.getElementById('beginBtn');
+  const skipBtn = document.getElementById('skipBtn');
+
+  function finishTyping(){
+    storyEl.textContent = fullStory;
+    beginBtn.style.display = 'inline-block';
+    skipBtn.style.display = 'none';
+  }
+
+  Game.typeWriter(storyEl, fullStory, 14).then(()=>{
+    beginBtn.style.display = 'inline-block';
+    skipBtn.style.display = 'none';
+  });
+  skipBtn.addEventListener('click', finishTyping);
+
+  beginBtn.addEventListener('click', ()=>{
+    Game.ensureStarted();
+    window.location.href = Game.ROOM_META['room1'].file;
+  });
+</script>
+</body>
+</html>

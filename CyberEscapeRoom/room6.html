@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room 6: URL Detective // Cyber Escape Room</title>
+<link rel="stylesheet" href="css/terminal.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="crt crt-flicker">
+<canvas id="matrixRain"></canvas>
+<div id="breachOverlay"></div>
+
+<div class="wrap">
+  <div id="hud"></div>
+
+  <div class="terminal-window fade-in">
+    <div class="terminal-titlebar">
+      <span class="tb-dot"></span><span class="tb-dot"></span><span class="tb-dot"></span>
+      <span class="tb-label">room6 :: dns_history.txt</span>
+    </div>
+    <div class="terminal-body">
+      <h1 class="page-title">ROOM 6 — URL DETECTIVE</h1>
+      <p class="page-subtitle">The final lock. Mark every suspicious/spoofed URL below.</p>
+
+      <div class="option-list" id="urlList"></div>
+
+      <div class="hint-actions">
+        <button class="btn-term" id="hintBtn">💡 Get Hint (−25 pts)</button>
+        <span class="hint-counter" id="hintCounter"></span>
+      </div>
+      <div class="hint-box" id="hintBox"></div>
+
+      <div class="hint-actions">
+        <button class="btn-term amber" id="submitBtn">Submit Final Answer</button>
+      </div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+  </div>
+
+  <div class="nav-footer">
+    <a href="room5.html" class="btn-term" style="text-decoration:none;">&laquo; Room 5</a>
+    <span></span>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/game.js"></script>
+<script src="js/timer.js"></script>
+<script src="js/puzzles.js"></script>
+<script>
+  const ROOM_KEY = 'room6';
+  Game.startMatrixRain();
+  if(!Game.isRoomUnlocked(ROOM_KEY)){ window.location.href = 'room5.html'; }
+  Game.renderHUD('hud', ROOM_KEY);
+  CountdownTimer.start({ onExpire: ()=>{ window.location.href = 'escape.html?ending=timeout'; } });
+
+  const urlMount = document.getElementById('urlList');
+  Puzzles.room6.urls.forEach((item, i)=>{
+    const div = document.createElement('label');
+    div.className = 'option-item';
+    div.innerHTML = `<input type="checkbox" value="${i}"> <span style="font-family:var(--mono)">${item.url}</span>`;
+    div.addEventListener('click', ()=> div.classList.toggle('selected', div.querySelector('input').checked));
+    urlMount.appendChild(div);
+  });
+
+  const hintBtn = document.getElementById('hintBtn');
+  const hintBox = document.getElementById('hintBox');
+  function refreshHintCounter(){
+    const used = Game.getState().hintsUsed[ROOM_KEY] || 0;
+    document.getElementById('hintCounter').textContent = `Hints used: ${used}/${Puzzles.room6.hints.length}`;
+    if(used >= Puzzles.room6.hints.length) hintBtn.disabled = true;
+  }
+  refreshHintCounter();
+  hintBtn.addEventListener('click', ()=>{
+    const used = Game.registerHint(ROOM_KEY);
+    Game.Sound.key();
+    hintBox.textContent = '💡 ' + (Puzzles.room6.hints[used-1] || Puzzles.room6.hints[Puzzles.room6.hints.length-1]);
+    hintBox.classList.add('show');
+    refreshHintCounter();
+  });
+
+  document.getElementById('submitBtn').addEventListener('click', ()=>{
+    const feedback = document.getElementById('feedback');
+    const selected = Array.from(document.querySelectorAll('#urlList input:checked')).map(i=>parseInt(i.value));
+    const correctSet = Puzzles.room6.urls.map((u,i)=>u.suspicious?i:null).filter(v=>v!==null);
+    const setsEqual = selected.length === correctSet.length && selected.every(v=>correctSet.includes(v));
+
+    if(setsEqual){
+      Game.Sound.success();
+      Game.Sound.unlock();
+      const pts = Game.completeRoom(ROOM_KEY);
+      Game.updateHudScore();
+      feedback.className = 'feedback show ok';
+      feedback.textContent = `✔ FINAL LOCK BROKEN — Key fragment acquired: "${Game.getState().inventory[ROOM_KEY]}"  (+${pts} pts)`;
+      document.getElementById('submitBtn').outerHTML = `<a href="escape.html" class="btn-term amber" style="text-decoration:none;display:inline-block;">Enter the Vault ▶</a>`;
+    } else {
+      Game.registerWrongAttempt(ROOM_KEY);
+      Game.Sound.error();
+      Game.triggerBreachFlash();
+      Game.shakeGlitch(document.querySelector('.page-title'));
+      feedback.className = 'feedback show err';
+      feedback.textContent = '✘ INCORRECT — your selection doesn\'t match the spoofed domains exactly. Re-check each URL.';
+    }
+  });
+
+  const st = Game.getState();
+  if(st.roomsCompleted[ROOM_KEY]){
+    const feedback = document.getElementById('feedback');
+    feedback.className = 'feedback show ok';
+    feedback.textContent = `✔ Already solved — fragment "${st.inventory[ROOM_KEY]}" collected.`;
+    document.getElementById('submitBtn').outerHTML = `<a href="escape.html" class="btn-term amber" style="text-decoration:none;display:inline-block;">Enter the Vault ▶</a>`;
+  }
+</script>
+</body>
+</html>

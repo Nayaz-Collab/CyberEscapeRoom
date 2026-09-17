@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYSTEM BREACH // Cyber Escape Room</title>
+<link rel="stylesheet" href="css/terminal.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="crt crt-flicker">
+<canvas id="matrixRain"></canvas>
+<div id="breachOverlay"></div>
+
+<div class="wrap">
+  <div class="hero fade-in">
+    <div class="flag-ascii">
+ ██████╗██╗   ██╗██████╗ ███████╗██████╗
+██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗
+██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝
+██║       ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗
+╚██████╗   ██║   ██████╔╝███████╗██║  ██║
+ ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝
+        E S C A P E   R O O M
+    </div>
+
+    <h1 class="page-title glitch-text" id="mainTitle">SYSTEM COMPROMISED</h1>
+    <p class="page-subtitle" id="subTitle">// initializing incident response protocol...</p>
+
+    <div class="terminal-window" style="text-align:left; margin-top:24px;">
+      <div class="terminal-titlebar">
+        <span class="tb-dot"></span><span class="tb-dot"></span><span class="tb-dot"></span>
+        <span class="tb-label">root@breached-server:~</span>
+      </div>
+      <div class="terminal-body">
+        <div class="prompt-line"><span class="ps1">guest</span><span id="typedIntro" class="type-out"></span><span class="cursor">&nbsp;</span></div>
+      </div>
+    </div>
+
+    <div class="hero-buttons">
+      <button class="btn-term" id="startBtn">▶ Start Mission</button>
+      <button class="btn-term amber" id="continueBtn" style="display:none;">↻ Continue Session</button>
+      <button class="btn-term danger" id="resetBtn">✕ Wipe Save Data</button>
+      <a href="glossary.html" class="btn-term" style="text-decoration:none;">📖 Field Manual</a>
+    </div>
+
+    <p class="page-subtitle" style="margin-top:26px;">6 rooms &nbsp;•&nbsp; live countdown &nbsp;•&nbsp; achievement badges &nbsp;•&nbsp; multiple endings</p>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/game.js"></script>
+<script>
+  Game.startMatrixRain();
+
+  const state = Game.getState();
+  const continueBtn = document.getElementById('continueBtn');
+  const startBtn = document.getElementById('startBtn');
+  if(state.started && !state.finished){
+    continueBtn.style.display = 'inline-block';
+    startBtn.textContent = '▶ Restart From Beginning';
+  }
+
+  Game.typeWriter(
+    document.getElementById('typedIntro'),
+    " A hacker has locked you inside your own security console. The only way out is through six rooms of layered defenses. Solve each challenge before the wipe timer hits zero."
+  );
+
+  startBtn.addEventListener('click', ()=>{
+    Game.hardReset();
+    Game.Sound.unlock();
+    window.location.href = 'story.html';
+  });
+  continueBtn.addEventListener('click', ()=>{
+    // resume at first incomplete room
+    const st = Game.getState();
+    const nextKey = Game.ROOM_ORDER.find(k => !st.roomsCompleted[k]);
+    window.location.href = nextKey ? Game.ROOM_META[nextKey].file : 'escape.html';
+  });
+  resetBtn.addEventListener('click', ()=>{
+    if(confirm('This will erase all saved progress, score, and achievements. Continue?')){
+      Game.hardReset();
+      location.reload();
+    }
+  });
+</script>
+</body>
+</html>

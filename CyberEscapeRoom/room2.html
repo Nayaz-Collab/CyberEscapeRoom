@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room 2: Phishing Detective // Cyber Escape Room</title>
+<link rel="stylesheet" href="css/terminal.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="crt crt-flicker">
+<canvas id="matrixRain"></canvas>
+<div id="breachOverlay"></div>
+
+<div class="wrap">
+  <div id="hud"></div>
+
+  <div class="terminal-window fade-in">
+    <div class="terminal-titlebar">
+      <span class="tb-dot"></span><span class="tb-dot"></span><span class="tb-dot"></span>
+      <span class="tb-label">room2 :: inbox_recovered.eml</span>
+    </div>
+    <div class="terminal-body">
+      <h1 class="page-title">ROOM 2 — PHISHING DETECTIVE</h1>
+      <p class="page-subtitle">One message survived the breach. Examine it carefully.</p>
+
+      <div class="mono-block" id="emailBlock" style="white-space:pre-wrap;"></div>
+
+      <p style="margin-top:18px;">1. Is this email a phishing attempt?</p>
+      <div class="option-list" id="phishingChoice"></div>
+
+      <p style="margin-top:18px;">2. Select ALL warning signs present:</p>
+      <div class="option-list" id="indicatorsList"></div>
+
+      <div class="hint-actions">
+        <button class="btn-term" id="hintBtn">💡 Get Hint (−25 pts)</button>
+        <span class="hint-counter" id="hintCounter"></span>
+      </div>
+      <div class="hint-box" id="hintBox"></div>
+
+      <div class="hint-actions">
+        <button class="btn-term amber" id="submitBtn">Submit Analysis</button>
+      </div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+  </div>
+
+  <div class="nav-footer">
+    <a href="room1.html" class="btn-term" style="text-decoration:none;">&laquo; Room 1</a>
+    <span></span>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/game.js"></script>
+<script src="js/timer.js"></script>
+<script src="js/puzzles.js"></script>
+<script>
+  const ROOM_KEY = 'room2';
+  Game.startMatrixRain();
+  if(!Game.isRoomUnlocked(ROOM_KEY)){ window.location.href = 'room1.html'; }
+  Game.renderHUD('hud', ROOM_KEY);
+  CountdownTimer.start({ onExpire: ()=>{ window.location.href = 'escape.html?ending=timeout'; } });
+
+  const em = Puzzles.room2.email;
+  document.getElementById('emailBlock').textContent =
+`From: ${em.from}
+Subject: ${em.subject}
+
+${em.body}`;
+
+  const phishMount = document.getElementById('phishingChoice');
+  [['yes','Yes, this is phishing'],['no','No, this is a legitimate email']].forEach(([val,label])=>{
+    const div = document.createElement('label');
+    div.className = 'option-item';
+    div.innerHTML = `<input type="radio" name="isPhishing" value="${val}"> <span>${label}</span>`;
+    div.addEventListener('click', ()=>{
+      document.querySelectorAll('#phishingChoice .option-item').forEach(o=>o.classList.remove('selected'));
+      div.classList.add('selected');
+    });
+    phishMount.appendChild(div);
+  });
+
+  const indMount = document.getElementById('indicatorsList');
+  Puzzles.room2.indicators.forEach((ind, i)=>{
+    const div = document.createElement('label');
+    div.className = 'option-item';
+    div.innerHTML = `<input type="checkbox" value="${i}"> <span>${ind.text}</span>`;
+    div.addEventListener('click', ()=> div.classList.toggle('selected', div.querySelector('input').checked));
+    indMount.appendChild(div);
+  });
+
+  const hintBtn = document.getElementById('hintBtn');
+  const hintBox = document.getElementById('hintBox');
+  function refreshHintCounter(){
+    const used = Game.getState().hintsUsed[ROOM_KEY] || 0;
+    document.getElementById('hintCounter').textContent = `Hints used: ${used}/${Puzzles.room2.hints.length}`;
+    if(used >= Puzzles.room2.hints.length) hintBtn.disabled = true;
+  }
+  refreshHintCounter();
+  hintBtn.addEventListener('click', ()=>{
+    const used = Game.registerHint(ROOM_KEY);
+    Game.Sound.key();
+    hintBox.textContent = '💡 ' + (Puzzles.room2.hints[used-1] || Puzzles.room2.hints[Puzzles.room2.hints.length-1]);
+    hintBox.classList.add('show');
+    refreshHintCounter();
+  });
+
+  document.getElementById('submitBtn').addEventListener('click', ()=>{
+    const feedback = document.getElementById('feedback');
+    const phishChoice = document.querySelector('input[name="isPhishing"]:checked');
+    const phishCorrect = phishChoice && ((phishChoice.value === 'yes') === Puzzles.room2.isPhishing);
+
+    const selected = Array.from(document.querySelectorAll('#indicatorsList input:checked')).map(i=>parseInt(i.value));
+    const correctSet = Puzzles.room2.indicators.map((ind,i)=>ind.correct?i:null).filter(v=>v!==null);
+    const setsEqual = selected.length === correctSet.length && selected.every(v=>correctSet.includes(v));
+
+    if(phishCorrect && setsEqual){
+      Game.Sound.success();
+      const pts = Game.completeRoom(ROOM_KEY);
+      Game.updateHudScore();
+      feedback.className = 'feedback show ok';
+      feedback.textContent = `✔ CORRECT ANALYSIS — Key fragment acquired: "${Game.getState().inventory[ROOM_KEY]}"  (+${pts} pts)`;
+      document.getElementById('submitBtn').outerHTML = `<a href="${Game.nextRoomFile(ROOM_KEY)}" class="btn-term amber" style="text-decoration:none;display:inline-block;">Proceed to Room 3 ▶</a>`;
+    } else {
+      Game.registerWrongAttempt(ROOM_KEY);
+      Game.Sound.error();
+      Game.triggerBreachFlash();
+      Game.shakeGlitch(document.querySelector('.page-title'));
+      feedback.className = 'feedback show err';
+      feedback.textContent = '✘ INCOMPLETE ANALYSIS — ' + (!phishCorrect ? 'Reconsider whether this is phishing. ' : '') + (!setsEqual ? 'Your selected warning signs don\'t quite match.' : '');
+    }
+  });
+
+  const st = Game.getState();
+  if(st.roomsCompleted[ROOM_KEY]){
+    const feedback = document.getElementById('feedback');
+    feedback.className = 'feedback show ok';
+    feedback.textContent = `✔ Already solved — fragment "${st.inventory[ROOM_KEY]}" collected.`;
+    document.getElementById('submitBtn').outerHTML = `<a href="${Game.nextRoomFile(ROOM_KEY)}" class="btn-term amber" style="text-decoration:none;display:inline-block;">Proceed to Room 3 ▶</a>`;
+  }
+</script>
+</body>
+</html>

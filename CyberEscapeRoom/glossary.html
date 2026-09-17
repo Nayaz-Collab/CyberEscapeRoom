@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Manual // Cyber Escape Room</title>
+<link rel="stylesheet" href="css/terminal.css">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .glossary-section{ margin-bottom: 28px; padding-bottom: 22px; border-bottom: 1px dashed var(--green-dim); scroll-margin-top: 90px; }
+  .glossary-section:last-child{ border-bottom: none; }
+  .term-card{ margin-top: 14px; }
+  .term-card h3{ color: var(--green-bright); font-size: 15px; margin: 0 0 6px; }
+  .term-card p{ margin: 0 0 8px; font-size: 13.5px; line-height:1.55; }
+  .term-card a{ font-size: 12.5px; }
+  .room-tag{ display:inline-block; font-size:11px; color: var(--green-dim); border:1px solid var(--green-dim); border-radius:4px; padding:2px 8px; margin-bottom:6px; }
+  .jump-nav{ display:flex; flex-wrap:wrap; gap:8px; margin: 16px 0 24px; }
+  .jump-nav a{ font-size:11.5px; text-decoration:none; }
+</style>
+</head>
+<body class="crt crt-flicker">
+<canvas id="matrixRain"></canvas>
+<div id="breachOverlay"></div>
+
+<div class="wrap">
+  <div id="hud"></div>
+
+  <div class="terminal-window fade-in">
+    <div class="terminal-titlebar">
+      <span class="tb-dot"></span><span class="tb-dot"></span><span class="tb-dot"></span>
+      <span class="tb-label">field_manual.md</span>
+    </div>
+    <div class="terminal-body">
+      <h1 class="page-title">FIELD MANUAL</h1>
+      <p class="page-subtitle">Background on every concept used in this escape room, with links if you want to go deeper. This isn't required reading to play — just here if you're curious.</p>
+
+      <div class="jump-nav">
+        <a class="btn-term" href="#room1" style="padding:4px 10px;font-size:11px;">Room 1: Ciphers</a>
+        <a class="btn-term" href="#room2" style="padding:4px 10px;font-size:11px;">Room 2: Phishing</a>
+        <a class="btn-term" href="#room3" style="padding:4px 10px;font-size:11px;">Room 3: Passwords</a>
+        <a class="btn-term" href="#room4" style="padding:4px 10px;font-size:11px;">Room 4: SQL Injection</a>
+        <a class="btn-term" href="#room5" style="padding:4px 10px;font-size:11px;">Room 5: Logs</a>
+        <a class="btn-term" href="#room6" style="padding:4px 10px;font-size:11px;">Room 6: URLs</a>
+      </div>
+
+      <!-- ROOM 1 -->
+      <div class="glossary-section" id="room1">
+        <span class="room-tag">Room 1</span>
+        <div class="term-card">
+          <h3>Caesar Cipher</h3>
+          <p>One of the oldest known encryption methods: every letter in the message is shifted a fixed number of places through the alphabet (e.g. shift 3: A→D, B→E). Because there are only 25 possible shifts, it offers no real security today — but it's a good first step for understanding how substitution ciphers work.</p>
+          <a href="https://en.wikipedia.org/wiki/Caesar_cipher" target="_blank" rel="noopener">Further reading: Caesar cipher — Wikipedia ↗</a>
+        </div>
+        <div class="term-card">
+          <h3>ROT13</h3>
+          <p>A special case of the Caesar cipher that always shifts by exactly 13 letters. Because the alphabet has 26 letters, applying ROT13 twice returns the original text — it's used more for obscuring spoilers online than for real security.</p>
+          <a href="https://en.wikipedia.org/wiki/ROT13" target="_blank" rel="noopener">Further reading: ROT13 — Wikipedia ↗</a>
+        </div>
+      </div>
+
+      <!-- ROOM 2 -->
+      <div class="glossary-section" id="room2">
+        <span class="room-tag">Room 2</span>
+        <div class="term-card">
+          <h3>Phishing</h3>
+          <p>A social-engineering attack where someone impersonates a trusted sender (a bank, a coworker, a well-known company) to trick you into clicking a malicious link, entering credentials, or sending money. It relies on urgency, authority, and familiarity rather than technical exploits.</p>
+          <a href="https://www.cisa.gov/topics/cyber-threats-and-advisories/phishing" target="_blank" rel="noopener">Further reading: Phishing guidance — CISA.gov ↗</a>
+        </div>
+        <div class="term-card">
+          <h3>Spoofed sender domains</h3>
+          <p>Attackers often register a domain that looks almost identical to a real one (swapping a letter for a lookalike character, adding a hyphen, or using a different top-level domain) so the "From" address passes a quick glance.</p>
+          <a href="https://en.wikipedia.org/wiki/Email_spoofing" target="_blank" rel="noopener">Further reading: Email spoofing — Wikipedia ↗</a>
+        </div>
+      </div>
+
+      <!-- ROOM 3 -->
+      <div class="glossary-section" id="room3">
+        <span class="room-tag">Room 3</span>
+        <div class="term-card">
+          <h3>Password strength</h3>
+          <p>Strength isn't just about complexity rules — length matters more than most people expect, and predictable patterns (a common word plus a few digits) stay weak even with a capital letter thrown in. Modern guidance favors long, unique passphrases over short, "complex-looking" passwords.</p>
+          <a href="https://pages.nist.gov/800-63-3/sp800-63b.html" target="_blank" rel="noopener">Further reading: NIST Digital Identity Guidelines (SP 800-63B) ↗</a>
+        </div>
+        <div class="term-card">
+          <h3>Default / common credentials</h3>
+          <p>Many breaches start with an attacker simply trying well-known default or common passwords (like "Admin123" or "password1") against a login form — no sophisticated hacking required.</p>
+          <a href="https://haveibeenpwned.com/Passwords" target="_blank" rel="noopener">Further reading: Pwned Passwords lookup — Have I Been Pwned ↗</a>
+        </div>
+      </div>
+
+      <!-- ROOM 4 -->
+      <div class="glossary-section" id="room4">
+        <span class="room-tag">Room 4</span>
+        <div class="term-card">
+          <h3>SQL Injection</h3>
+          <p>Happens when user input is pasted directly into a database query instead of being treated as pure data. A malicious input like <code>' OR '1'='1</code> can change the meaning of the query entirely, letting an attacker bypass a login or extract data they shouldn't see.</p>
+          <a href="https://owasp.org/www-community/attacks/SQL_Injection" target="_blank" rel="noopener">Further reading: SQL Injection — OWASP ↗</a>
+        </div>
+        <div class="term-card">
+          <h3>Prepared statements / parameterized queries</h3>
+          <p>The standard fix: the query structure and the user-supplied values are sent to the database separately, so input can never be interpreted as part of the SQL command itself.</p>
+          <a href="https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">Further reading: SQL Injection Prevention Cheat Sheet — OWASP ↗</a>
+        </div>
+      </div>
+
+      <!-- ROOM 5 -->
+      <div class="glossary-section" id="room5">
+        <span class="room-tag">Room 5</span>
+        <div class="term-card">
+          <h3>Brute-force / credential attacks</h3>
+          <p>An attacker repeatedly guesses passwords for a given account until one works. In server logs, this usually shows up as a burst of failed login attempts (401 responses) from the same IP address in a short window.</p>
+          <a href="https://owasp.org/www-community/attacks/Brute_force_attack" target="_blank" rel="noopener">Further reading: Brute Force Attack — OWASP ↗</a>
+        </div>
+        <div class="term-card">
+          <h3>Log analysis</h3>
+          <p>Security teams review server/access logs to reconstruct what happened during an incident: which IP was involved, how many attempts were made, and exactly when the activity started — the same three things Room 5 asks you to find.</p>
+          <a href="https://en.wikipedia.org/wiki/Log_analysis" target="_blank" rel="noopener">Further reading: Log analysis — Wikipedia ↗</a>
+        </div>
+      </div>
+
+      <!-- ROOM 6 -->
+      <div class="glossary-section" id="room6">
+        <span class="room-tag">Room 6</span>
+        <div class="term-card">
+          <h3>Typosquatting</h3>
+          <p>Registering a domain that's a slight misspelling or visual lookalike of a real one (like a zero instead of the letter "o") to catch people who don't look closely, or who mistype a URL.</p>
+          <a href="https://en.wikipedia.org/wiki/Typosquatting" target="_blank" rel="noopener">Further reading: Typosquatting — Wikipedia ↗</a>
+        </div>
+        <div class="term-card">
+          <h3>Homograph / lookalike-character attacks</h3>
+          <p>A more subtle version of typosquatting that swaps letters for visually identical characters (a capital "I" for a lowercase "l", or letters from another alphabet) so the fake domain is almost indistinguishable at a glance.</p>
+          <a href="https://en.wikipedia.org/wiki/IDN_homograph_attack" target="_blank" rel="noopener">Further reading: IDN homograph attack — Wikipedia ↗</a>
+        </div>
+      </div>
+
+      <div class="hint-actions">
+        <a href="index.html" class="btn-term amber" style="text-decoration:none;">&laquo; Back to Terminal</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/game.js"></script>
+<script>
+  Game.startMatrixRain();
+  Game.renderHUD('hud', null);
+</script>
+</body>
+</html>
